@@ -171,7 +171,7 @@ Delete queries accept a filter to match rows to delete.
 
 ```sql
 DELETE FROM prod.db.table
-WHERE ts >= '2020-05-01 00:00:00' and ts < '2020-06-01 00:00:00'
+WHERE ts >= '2020-05-01 00:00:00' AND ts < '2020-06-01 00:00:00'
 
 DELETE FROM prod.db.all_events
 WHERE session_time < (SELECT min(session_time) FROM prod.db.good_events)
@@ -191,7 +191,7 @@ Update queries accept a filter to match rows to update.
 ```sql
 UPDATE prod.db.table
 SET c1 = 'update_c1', c2 = 'update_c2'
-WHERE ts >= '2020-05-01 00:00:00' and ts < '2020-06-01 00:00:00'
+WHERE ts >= '2020-05-01 00:00:00' AND ts < '2020-06-01 00:00:00'
 
 UPDATE prod.db.all_events
 SET session_time = 0, ignored = true

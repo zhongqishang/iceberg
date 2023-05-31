@@ -91,7 +91,7 @@ The above diagram shows an example of using an audit branch for validating a wri
 1. First ensure `write.wap.enabled` is set.
 ```sql
 ALTER TABLE db.table SET TBLPROPERTIES (
-    'write.wap.enabled''true'
+    'write.wap.enabled'='true'
 )
 ```
 2. Create `audit-branch` starting from snapshot 3, which will be written to and retained for 1 week.
