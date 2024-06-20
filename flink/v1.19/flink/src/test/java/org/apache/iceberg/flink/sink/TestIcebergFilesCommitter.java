@@ -176,8 +176,8 @@ public class TestIcebergFilesCommitter extends TestBase {
     }
   }
 
-  private WriteResult of(DataFile dataFile) {
-    return WriteResult.builder().addDataFiles(dataFile).build();
+  private WriteResult of(long checkpointId, DataFile dataFile) {
+    return WriteResult.builder().checkpointId(checkpointId).addDataFiles(dataFile).build();
   }
 
   @TestTemplate
@@ -204,7 +204,7 @@ public class TestIcebergFilesCommitter extends TestBase {
       for (int i = 1; i <= 3; i++) {
         RowData rowData = SimpleDataUtil.createRowData(i, "hello" + i);
         DataFile dataFile = writeDataFile("data-" + i, ImmutableList.of(rowData));
-        harness.processElement(of(dataFile), ++timestamp);
+        harness.processElement(of(i, dataFile), ++timestamp);
         rows.add(rowData);
 
         harness.snapshot(i, ++timestamp);
@@ -243,21 +243,21 @@ public class TestIcebergFilesCommitter extends TestBase {
       RowData row1 = SimpleDataUtil.createRowData(1, "hello");
       DataFile dataFile1 = writeDataFile("data-1", ImmutableList.of(row1));
 
-      harness.processElement(of(dataFile1), ++timestamp);
+      long firstCheckpointId = 1;
+      harness.processElement(of(firstCheckpointId, dataFile1), ++timestamp);
       assertMaxCommittedCheckpointId(jobId, operatorId, -1L);
 
       // 1. snapshotState for checkpoint#1
-      long firstCheckpointId = 1;
       harness.snapshot(firstCheckpointId, ++timestamp);
       assertFlinkManifests(1);
 
       RowData row2 = SimpleDataUtil.createRowData(2, "world");
       DataFile dataFile2 = writeDataFile("data-2", ImmutableList.of(row2));
-      harness.processElement(of(dataFile2), ++timestamp);
+      long secondCheckpointId = 2;
+      harness.processElement(of(secondCheckpointId, dataFile2), ++timestamp);
       assertMaxCommittedCheckpointId(jobId, operatorId, -1L);
 
       // 2. snapshotState for checkpoint#2
-      long secondCheckpointId = 2;
       harness.snapshot(secondCheckpointId, ++timestamp);
       assertFlinkManifests(2);
 
@@ -296,21 +296,21 @@ public class TestIcebergFilesCommitter extends TestBase {
       RowData row1 = SimpleDataUtil.createRowData(1, "hello");
       DataFile dataFile1 = writeDataFile("data-1", ImmutableList.of(row1));
 
-      harness.processElement(of(dataFile1), ++timestamp);
+      long firstCheckpointId = 1;
+      harness.processElement(of(firstCheckpointId, dataFile1), ++timestamp);
       assertMaxCommittedCheckpointId(jobId, operatorId, -1L);
 
       // 1. snapshotState for checkpoint#1
-      long firstCheckpointId = 1;
       harness.snapshot(firstCheckpointId, ++timestamp);
       assertFlinkManifests(1);
 
       RowData row2 = SimpleDataUtil.createRowData(2, "world");
       DataFile dataFile2 = writeDataFile("data-2", ImmutableList.of(row2));
-      harness.processElement(of(dataFile2), ++timestamp);
+      long secondCheckpointId = 2;
+      harness.processElement(of(secondCheckpointId, dataFile2), ++timestamp);
       assertMaxCommittedCheckpointId(jobId, operatorId, -1L);
 
       // 2. snapshotState for checkpoint#2
-      long secondCheckpointId = 2;
       harness.snapshot(secondCheckpointId, ++timestamp);
       assertFlinkManifests(2);
 
@@ -349,8 +349,8 @@ public class TestIcebergFilesCommitter extends TestBase {
       expectedRows.add(row);
       DataFile dataFile1 = writeDataFile("data-1", ImmutableList.of(row));
 
-      harness.processElement(of(dataFile1), ++timestamp);
-      snapshot = harness.snapshot(++checkpointId, ++timestamp);
+      harness.processElement(of(++checkpointId, dataFile1), ++timestamp);
+      snapshot = harness.snapshot(checkpointId, ++timestamp);
       assertFlinkManifests(1);
 
       harness.notifyOfCompletedCheckpoint(checkpointId);
@@ -375,9 +375,9 @@ public class TestIcebergFilesCommitter extends TestBase {
       RowData row = SimpleDataUtil.createRowData(2, "world");
       expectedRows.add(row);
       DataFile dataFile = writeDataFile("data-2", ImmutableList.of(row));
-      harness.processElement(of(dataFile), ++timestamp);
+      harness.processElement(of(++checkpointId, dataFile), ++timestamp);
 
-      harness.snapshot(++checkpointId, ++timestamp);
+      harness.snapshot(checkpointId, ++timestamp);
       assertFlinkManifests(1);
 
       harness.notifyOfCompletedCheckpoint(checkpointId);
@@ -411,9 +411,9 @@ public class TestIcebergFilesCommitter extends TestBase {
       RowData row = SimpleDataUtil.createRowData(1, "hello");
       expectedRows.add(row);
       DataFile dataFile = writeDataFile("data-1", ImmutableList.of(row));
-      harness.processElement(of(dataFile), ++timestamp);
+      harness.processElement(of(++checkpointId, dataFile), ++timestamp);
 
-      snapshot = harness.snapshot(++checkpointId, ++timestamp);
+      snapshot = harness.snapshot(checkpointId, ++timestamp);
       SimpleDataUtil.assertTableRows(table, ImmutableList.of(), branch);
       assertMaxCommittedCheckpointId(jobId, operatorId, -1L);
       assertFlinkManifests(1);
@@ -446,9 +446,9 @@ public class TestIcebergFilesCommitter extends TestBase {
       RowData row = SimpleDataUtil.createRowData(2, "world");
       expectedRows.add(row);
       DataFile dataFile = writeDataFile("data-2", ImmutableList.of(row));
-      harness.processElement(of(dataFile), ++timestamp);
+      harness.processElement(of(++checkpointId, dataFile), ++timestamp);
 
-      snapshot = harness.snapshot(++checkpointId, ++timestamp);
+      snapshot = harness.snapshot(checkpointId, ++timestamp);
       assertFlinkManifests(1);
     }
 
@@ -473,9 +473,9 @@ public class TestIcebergFilesCommitter extends TestBase {
       RowData row = SimpleDataUtil.createRowData(3, "foo");
       expectedRows.add(row);
       DataFile dataFile = writeDataFile("data-3", ImmutableList.of(row));
-      harness.processElement(of(dataFile), ++timestamp);
+      harness.processElement(of(++checkpointId, dataFile), ++timestamp);
 
-      harness.snapshot(++checkpointId, ++timestamp);
+      harness.snapshot(checkpointId, ++timestamp);
       assertFlinkManifests(1);
 
       harness.notifyOfCompletedCheckpoint(checkpointId);
@@ -510,8 +510,8 @@ public class TestIcebergFilesCommitter extends TestBase {
         tableRows.addAll(rows);
 
         DataFile dataFile = writeDataFile(String.format("data-%d", i), rows);
-        harness.processElement(of(dataFile), ++timestamp);
-        harness.snapshot(++checkpointId, ++timestamp);
+        harness.processElement(of(++checkpointId, dataFile), ++timestamp);
+        harness.snapshot(checkpointId, ++timestamp);
         assertFlinkManifests(1);
 
         harness.notifyOfCompletedCheckpoint(checkpointId);
@@ -542,8 +542,8 @@ public class TestIcebergFilesCommitter extends TestBase {
       tableRows.addAll(rows);
 
       DataFile dataFile = writeDataFile("data-new-1", rows);
-      harness.processElement(of(dataFile), ++timestamp);
-      harness.snapshot(++checkpointId, ++timestamp);
+      harness.processElement(of(++checkpointId, dataFile), ++timestamp);
+      harness.snapshot(checkpointId, ++timestamp);
       assertFlinkManifests(1);
 
       harness.notifyOfCompletedCheckpoint(checkpointId);
@@ -579,7 +579,7 @@ public class TestIcebergFilesCommitter extends TestBase {
         tableRows.addAll(rows);
 
         DataFile dataFile = writeDataFile(String.format("data-%d", i), rows);
-        harness.processElement(of(dataFile), ++timestamp);
+        harness.processElement(of(checkpointId + 1, dataFile), ++timestamp);
         harness.snapshot(checkpointId + 1, ++timestamp);
         assertFlinkManifests(1);
 
@@ -620,14 +620,14 @@ public class TestIcebergFilesCommitter extends TestBase {
       expectedRows.add(row1);
       DataFile dataFile1 = writeDataFile("data-1-1", ImmutableList.of(row1));
 
-      harness1.processElement(of(dataFile1), ++timestamp);
-      snapshot1 = harness1.snapshot(++checkpointId, ++timestamp);
+      harness1.processElement(of(++checkpointId, dataFile1), ++timestamp);
+      snapshot1 = harness1.snapshot(checkpointId, ++timestamp);
 
       RowData row2 = SimpleDataUtil.createRowData(1, "hello2");
       expectedRows.add(row2);
       DataFile dataFile2 = writeDataFile("data-1-2", ImmutableList.of(row2));
 
-      harness2.processElement(of(dataFile2), ++timestamp);
+      harness2.processElement(of(checkpointId, dataFile2), ++timestamp);
       snapshot2 = harness2.snapshot(checkpointId, ++timestamp);
       assertFlinkManifests(2);
 
@@ -668,13 +668,13 @@ public class TestIcebergFilesCommitter extends TestBase {
       expectedRows.add(row1);
       DataFile dataFile1 = writeDataFile("data-2-1", ImmutableList.of(row1));
 
-      harness1.processElement(of(dataFile1), ++timestamp);
-      harness1.snapshot(++checkpointId, ++timestamp);
+      harness1.processElement(of(++checkpointId, dataFile1), ++timestamp);
+      harness1.snapshot(checkpointId, ++timestamp);
 
       RowData row2 = SimpleDataUtil.createRowData(2, "world2");
       expectedRows.add(row2);
       DataFile dataFile2 = writeDataFile("data-2-2", ImmutableList.of(row2));
-      harness2.processElement(of(dataFile2), ++timestamp);
+      harness2.processElement(of(checkpointId, dataFile2), ++timestamp);
       harness2.snapshot(checkpointId, ++timestamp);
 
       assertFlinkManifests(2);
@@ -706,7 +706,7 @@ public class TestIcebergFilesCommitter extends TestBase {
       List<RowData> tableRows = Lists.newArrayList(SimpleDataUtil.createRowData(1, "word-1"));
 
       DataFile dataFile = writeDataFile("data-1", tableRows);
-      harness.processElement(of(dataFile), 1);
+      harness.processElement(of(Long.MAX_VALUE, dataFile), 1);
       ((BoundedOneInput) harness.getOneInputOperator()).endInput();
 
       assertFlinkManifests(0);
@@ -735,7 +735,7 @@ public class TestIcebergFilesCommitter extends TestBase {
       RowData row1 = SimpleDataUtil.createRowData(1, "hello");
       DataFile dataFile1 = writeDataFile("data-1", ImmutableList.of(row1));
 
-      harness.processElement(of(dataFile1), ++timestamp);
+      harness.processElement(of(checkpoint, dataFile1), ++timestamp);
       assertMaxCommittedCheckpointId(jobId, operatorId, -1L);
 
       // 1. snapshotState for checkpoint#1
@@ -784,7 +784,7 @@ public class TestIcebergFilesCommitter extends TestBase {
 
       RowData row1 = SimpleDataUtil.createInsert(1, "aaa");
       DataFile dataFile1 = writeDataFile("data-file-1", ImmutableList.of(row1));
-      harness.processElement(of(dataFile1), ++timestamp);
+      harness.processElement(of(checkpoint, dataFile1), ++timestamp);
       assertMaxCommittedCheckpointId(jobId, operatorId, -1L);
 
       // 1. snapshotState for checkpoint#1
@@ -816,13 +816,17 @@ public class TestIcebergFilesCommitter extends TestBase {
       RowData delete1 = SimpleDataUtil.createDelete(1, "aaa");
       DeleteFile deleteFile1 =
           writeEqDeleteFile(appenderFactory, "delete-file-1", ImmutableList.of(delete1));
-      harness.processElement(
-          WriteResult.builder().addDataFiles(dataFile2).addDeleteFiles(deleteFile1).build(),
-          ++timestamp);
       assertMaxCommittedCheckpointId(jobId, operatorId, checkpoint);
+      harness.processElement(
+          WriteResult.builder()
+              .checkpointId(++checkpoint)
+              .addDataFiles(dataFile2)
+              .addDeleteFiles(deleteFile1)
+              .build(),
+          ++timestamp);
 
       // 5. snapshotState for checkpoint#2
-      harness.snapshot(++checkpoint, ++timestamp);
+      harness.snapshot(checkpoint, ++timestamp);
       assertFlinkManifests(2);
 
       // 6. notifyCheckpointComplete for checkpoint#2
@@ -860,7 +864,11 @@ public class TestIcebergFilesCommitter extends TestBase {
       DeleteFile deleteFile1 =
           writeEqDeleteFile(appenderFactory, "delete-file-1", ImmutableList.of(delete3));
       harness.processElement(
-          WriteResult.builder().addDataFiles(dataFile1).addDeleteFiles(deleteFile1).build(),
+          WriteResult.builder()
+              .checkpointId(checkpoint)
+              .addDataFiles(dataFile1)
+              .addDeleteFiles(deleteFile1)
+              .build(),
           ++timestamp);
 
       // The 1th snapshotState.
@@ -868,15 +876,19 @@ public class TestIcebergFilesCommitter extends TestBase {
 
       RowData insert4 = SimpleDataUtil.createInsert(4, "ddd");
       RowData delete2 = SimpleDataUtil.createDelete(2, "bbb");
-      DataFile dataFile2 = writeDataFile("data-file-2", ImmutableList.of(insert4));
+      DataFile dataFile2 = writeDataFile("data-file-2", ImmutableList.of(insert1, insert4));
       DeleteFile deleteFile2 =
           writeEqDeleteFile(appenderFactory, "delete-file-2", ImmutableList.of(delete2));
       harness.processElement(
-          WriteResult.builder().addDataFiles(dataFile2).addDeleteFiles(deleteFile2).build(),
+          WriteResult.builder()
+              .checkpointId(++checkpoint)
+              .addDataFiles(dataFile2)
+              .addDeleteFiles(deleteFile2)
+              .build(),
           ++timestamp);
 
       // The 2nd snapshotState.
-      harness.snapshot(++checkpoint, ++timestamp);
+      harness.snapshot(checkpoint, ++timestamp);
 
       // Notify the 2nd snapshot to complete.
       harness.notifyOfCompletedCheckpoint(checkpoint);
@@ -910,7 +922,7 @@ public class TestIcebergFilesCommitter extends TestBase {
       RowData rowData = SimpleDataUtil.createRowData(checkpointId, "hello" + checkpointId);
       // table unpartitioned
       dataFile = writeDataFile("data-" + checkpointId, ImmutableList.of(rowData));
-      harness.processElement(of(dataFile), ++timestamp);
+      harness.processElement(of(checkpointId, dataFile), ++timestamp);
       rows.add(rowData);
       harness.snapshot(checkpointId, ++timestamp);
 
@@ -929,7 +941,7 @@ public class TestIcebergFilesCommitter extends TestBase {
       rowData = SimpleDataUtil.createRowData(checkpointId, "hello" + checkpointId);
       // write data with old partition spec
       dataFile = writeDataFile("data-" + checkpointId, ImmutableList.of(rowData), oldSpec, null);
-      harness.processElement(of(dataFile), ++timestamp);
+      harness.processElement(of(checkpointId, dataFile), ++timestamp);
       rows.add(rowData);
       snapshot = harness.snapshot(checkpointId, ++timestamp);
 
@@ -963,7 +975,7 @@ public class TestIcebergFilesCommitter extends TestBase {
       partition.set(0, checkpointId);
       dataFile =
           writeDataFile("data-" + checkpointId, ImmutableList.of(row), table.spec(), partition);
-      harness.processElement(of(dataFile), ++timestamp);
+      harness.processElement(of(checkpointId, dataFile), ++timestamp);
       rows.add(row);
       harness.snapshot(checkpointId, ++timestamp);
       assertFlinkManifests(1);

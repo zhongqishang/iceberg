@@ -28,15 +28,28 @@ import org.apache.iceberg.relocated.com.google.common.collect.Lists;
 import org.apache.iceberg.util.CharSequenceSet;
 
 public class WriteResult implements Serializable {
+  private long checkpointId;
   private DataFile[] dataFiles;
   private DeleteFile[] deleteFiles;
   private CharSequence[] referencedDataFiles;
 
   private WriteResult(
-      List<DataFile> dataFiles, List<DeleteFile> deleteFiles, CharSequenceSet referencedDataFiles) {
+      long checkpointId,
+      List<DataFile> dataFiles,
+      List<DeleteFile> deleteFiles,
+      CharSequenceSet referencedDataFiles) {
+    this.checkpointId = checkpointId;
     this.dataFiles = dataFiles.toArray(new DataFile[0]);
     this.deleteFiles = deleteFiles.toArray(new DeleteFile[0]);
     this.referencedDataFiles = referencedDataFiles.toArray(new CharSequence[0]);
+  }
+
+  public void checkpointId(long checkpointId) {
+    this.checkpointId = checkpointId;
+  }
+
+  public long checkpointId() {
+    return checkpointId;
   }
 
   public DataFile[] dataFiles() {
@@ -56,14 +69,21 @@ public class WriteResult implements Serializable {
   }
 
   public static class Builder {
+    private long checkpointId;
     private final List<DataFile> dataFiles;
     private final List<DeleteFile> deleteFiles;
     private final CharSequenceSet referencedDataFiles;
 
     private Builder() {
+      this.checkpointId = -1;
       this.dataFiles = Lists.newArrayList();
       this.deleteFiles = Lists.newArrayList();
       this.referencedDataFiles = CharSequenceSet.empty();
+    }
+
+    public Builder checkpointId(long checkpoint) {
+      this.checkpointId = checkpoint;
+      return this;
     }
 
     public Builder add(WriteResult result) {
@@ -110,7 +130,7 @@ public class WriteResult implements Serializable {
     }
 
     public WriteResult build() {
-      return new WriteResult(dataFiles, deleteFiles, referencedDataFiles);
+      return new WriteResult(checkpointId, dataFiles, deleteFiles, referencedDataFiles);
     }
   }
 }
