@@ -194,9 +194,33 @@ class IcebergFilesCommitter extends AbstractStreamOperator<Void>
               .tailMap(maxCommittedCheckpointId, false);
       if (!uncommittedDataFiles.isEmpty()) {
         // Committed all uncommitted data files from the old flink job to iceberg table.
-        long maxUncommittedCheckpointId = uncommittedDataFiles.lastKey();
-        commitUpToCheckpoint(
-            uncommittedDataFiles, restoredFlinkJobId, operatorUniqueId, maxUncommittedCheckpointId);
+        if (maxCommittedCheckpointId < 0) {
+          long maxUncommittedCheckpointId = uncommittedDataFiles.lastKey();
+          commitUpToCheckpoint(
+              uncommittedDataFiles,
+              restoredFlinkJobId,
+              operatorUniqueId,
+              maxUncommittedCheckpointId);
+        } else {
+          NavigableMap<Long, byte[]> uncommittedSchemaChangeDataFiles =
+              Maps.newTreeMap(checkpointsState.get().iterator().next()).headMap(0L, false);
+          if (!uncommittedSchemaChangeDataFiles.isEmpty()) {
+            // Committed all uncommitted data files from the old flink job to iceberg table.
+            long maxUncommittedCheckpointId = uncommittedSchemaChangeDataFiles.lastKey();
+            commitUpToCheckpoint(
+                uncommittedSchemaChangeDataFiles,
+                restoredFlinkJobId,
+                operatorUniqueId,
+                maxUncommittedCheckpointId);
+          }
+
+          long maxUncommittedCheckpointId = uncommittedDataFiles.lastKey();
+          commitUpToCheckpoint(
+              uncommittedDataFiles,
+              restoredFlinkJobId,
+              operatorUniqueId,
+              maxUncommittedCheckpointId);
+        }
       }
     }
   }
