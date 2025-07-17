@@ -186,7 +186,7 @@ class IcebergFilesCommitter extends AbstractStreamOperator<Void>
       // flink job even if it's restored from a snapshot created by another different flink job, so
       // it's safe to assign the max committed checkpoint id from restored flink job to the current
       // flink job.
-      this.maxCommittedCheckpointId =
+      long maxCommittedCheckpointId =
           getMaxCommittedCheckpointId(table, restoredFlinkJobId, operatorUniqueId, branch);
 
       NavigableMap<Long, byte[]> uncommittedDataFiles =
